@@ -69,6 +69,8 @@ int main(int argc, char **argv) {
     struct task_queue redQueue;
     struct task_queue blueQueue;
 
+    task_queue_init(&redQueue, MAX, repollfd);
+    task_queue_init(&blueQueue, MAX, bepollfd);
     pthread_create(&red_t, NULL, sub_reactor, (void *)&redQueue);
     pthread_create(&blue_t, NULL, sub_reactor, (void *)&blueQueue);
     
