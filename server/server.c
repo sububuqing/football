@@ -101,6 +101,8 @@ int main(int argc, char **argv) {
     task_queue_init(&redQueue, MAX, repollfd);
     task_queue_init(&blueQueue, MAX, bepollfd);
 
+    task_queue_init(&redQueue, MAX, repollfd);
+    task_queue_init(&blueQueue, MAX, bepollfd);
     pthread_create(&red_t, NULL, sub_reactor, (void *)&redQueue);
     pthread_create(&blue_t, NULL, sub_reactor, (void *)&blueQueue);
     
