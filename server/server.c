@@ -1,6 +1,4 @@
 /*************************************************************************
-:Q
-:q
 	> File Name: server.c
 	> Author: suyelu 
 	> Mail: suyelu@126.com
@@ -16,9 +14,39 @@ struct Score score;
 int repollfd, bepollfd;
 struct User *rteam, *bteam;
 int port = 0;
+int listener, epollfd;
+pthread_mutex_t rmutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t bmutex = PTHREAD_MUTEX_INITIALIZER;
+
+void logout(int signum)
+{        
+    struct ChatMsg msg;
+    bzero(&msg, sizeof(msg));
+    msg.type = CHAT_SYS | CHAT_FIN;
+    strcpy(msg.msg, "server offline.\n");
+    for (int i = 0; i < MAX; i++) {
+        if (rteam[i].online) {
+                        send(rteam[i].fd, (void*)&msg, sizeof(msg), 0);
+                        del_event(repollfd, rteam[i].fd);
+                        close(rteam[i].fd);
+                    
+        }
+        if (bteam[i].online) {
+                        send(bteam[i].fd, (void*)&msg, sizeof(msg), 0);
+                        del_event(bepollfd, bteam[i].fd);
+                        close(bteam[i].fd);
+                    
+        }
+            
+    }
+    close(repollfd);
+    close(bepollfd);
+    close(epollfd);
+    close(listener);
+}
 
 int main(int argc, char **argv) {
-    int opt, listener, epollfd;
+    int opt;
     pthread_t red_t, blue_t;
     while ((opt = getopt(argc, argv, "p:")) != -1) {
         switch (opt) {
@@ -57,6 +85,7 @@ int main(int argc, char **argv) {
     rteam = (struct User *)calloc(MAX, sizeof(struct User));
     bteam = (struct User *)calloc(MAX, sizeof(struct User));
 
+    
     epollfd = epoll_create(MAX * 2);
     repollfd = epoll_create(MAX);
     bepollfd = epoll_create(MAX);
@@ -68,6 +97,9 @@ int main(int argc, char **argv) {
     
     struct task_queue redQueue;
     struct task_queue blueQueue;
+    
+    task_queue_init(&redQueue, MAX, repollfd);
+    task_queue_init(&blueQueue, MAX, bepollfd);
 
     pthread_create(&red_t, NULL, sub_reactor, (void *)&redQueue);
     pthread_create(&blue_t, NULL, sub_reactor, (void *)&blueQueue);
@@ -84,7 +116,7 @@ int main(int argc, char **argv) {
     struct sockaddr_in client;
     bzero(&client, sizeof(client));
     socklen_t len = sizeof(client);
-
+    signal(SIGINT, logout);
     while (1) {
         DBG(YELLOW"Main Reactor"NONE" : Waiting for clienti.\n");
         int nfds = epoll_wait(epollfd, events, MAX * 2, -1); 
@@ -98,7 +130,7 @@ int main(int argc, char **argv) {
             if (events[i].data.fd == listener) {
                 int new_fd = udp_accept(listener, &user);
                 if (new_fd > 0) {
-                //    add_to_sub_reactor(&user);
+                    add_to_sub_reactor(&user);
                 }
             }
         }

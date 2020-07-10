@@ -96,6 +96,20 @@ struct FootBallMsg{
     struct Ctl ctl;
 };
 
+#define CHAT_FIN   0x01   //断开连接
+#define CHAT_HEART 0x02   //
+#define CHAT_ACK   0x04   //
+#define CHAT_WALL  0x08   //公聊
+#define CHAT_MSG   0x10   //私聊
+#define CHAT_FUNC  0X20   //功能
+#define CHAT_SYS   0x40   //系统通知信息
+
+struct ChatMsg {
+    int type;         //类型
+    char name[20];    //由谁发送的信息
+    char msg[1024];
+    
+};
 
 struct Map{
     int width;
